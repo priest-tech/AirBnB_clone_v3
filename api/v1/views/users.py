@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 View for Users that handles all RESTful API actions
 """
@@ -14,7 +15,7 @@ def users_all():
     users_all = []
     users = storage.all("User").values()
     for user in users:
-        users_all.append(user.to_dict())
+        users_all.append(user.to_json())
     return jsonify(users_all)
 
 
@@ -24,19 +25,20 @@ def user_get(user_id):
     user = storage.get("User", user_id)
     if user is None:
         abort(404)
-    user = user.to_dict()
+    user = user.to_json()
     return jsonify(user)
 
 
 @app_views.route('/users/<user_id>', methods=['DELETE'])
 def user_delete(user_id):
     """ handles DELETE method """
+    empty_dict = {}
     user = storage.get("User", user_id)
     if user is None:
         abort(404)
     storage.delete(user)
     storage.save()
-    return jsonify({}), 200
+    return jsonify(empty_dict), 200
 
 
 @app_views.route('/users', methods=['POST'], strict_slashes=False)
@@ -51,7 +53,7 @@ def user_post():
         abort(400, "Missing password")
     user = User(**data)
     user.save()
-    user = user.to_dict()
+    user = user.to_json()
     return jsonify(user), 201
 
 
@@ -69,6 +71,5 @@ def user_put(user_id):
         if key not in ignore_keys:
             user.bm_update(key, value)
     user.save()
-    user = user.to_dict()
+    user = user.to_json()
     return jsonify(user), 200
-
