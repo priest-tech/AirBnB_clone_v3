@@ -1,65 +1,74 @@
-#!/usr/bin/python3
-"""State objects that handles all default RestFul API actions"""
+"""
+View for Users that handles all RESTful API actions
+"""
 
-from api.v1.views import app_views
-from flask import jsonify, abort, request
+from flask import jsonify, request, abort
 from models import storage
-from models.state import State
+from models.user import User
+from api.v1.views import app_views
 
 
-@app_views.route('/states', methods=['GET'], strict_slashes=False)
-def get_all_states():
-    """Retrieves the list of all State objects"""
-    states = storage.all(State).values()
-    states_list = [state.to_dict() for state in states]
-    return jsonify(states_list)
+@app_views.route('/users', methods=['GET'], strict_slashes=False)
+def users_all():
+    """ returns list of all User objects """
+    users_all = []
+    users = storage.all("User").values()
+    for user in users:
+        users_all.append(user.to_dict())
+    return jsonify(users_all)
 
 
-@app_views.route('/states/<state_id>', methods=['GET'], strict_slashes=False)
-def get_state(state_id):
-    """Retrieves a State object"""
-    state = storage.get(State, state_id)
-    if state is None:
+@app_views.route('/users/<user_id>', methods=['GET'])
+def user_get(user_id):
+    """ handles GET method """
+    user = storage.get("User", user_id)
+    if user is None:
         abort(404)
-    return jsonify(state.to_dict())
+    user = user.to_dict()
+    return jsonify(user)
 
 
-@app_views.route('/states/<state_id>', methods=['DELETE'], strict_slashes=False)
-def delete_state(state_id):
-    """Deletes a State object"""
-    state = storage.get(State, state_id)
-    if state is None:
+@app_views.route('/users/<user_id>', methods=['DELETE'])
+def user_delete(user_id):
+    """ handles DELETE method """
+    user = storage.get("User", user_id)
+    if user is None:
         abort(404)
-    state.delete()
+    storage.delete(user)
     storage.save()
     return jsonify({}), 200
 
 
-@app_views.route('/states', methods=['POST'], strict_slashes=False)
-def create_state():
-    """Creates a State"""
-    if not request.json:
+@app_views.route('/users', methods=['POST'], strict_slashes=False)
+def user_post():
+    """ handles POST method """
+    data = request.get_json()
+    if data is None:
         abort(400, "Not a JSON")
-    if 'name' not in request.json:
-        abort(400, "Missing name")
-    data = request.json
-    state = State(**data)
-    state.save()
-    return jsonify(state.to_dict()), 201
+    if 'email' not in data:
+        abort(400, "Missing email")
+    if 'password' not in data:
+        abort(400, "Missing password")
+    user = User(**data)
+    user.save()
+    user = user.to_dict()
+    return jsonify(user), 201
 
 
-@app_views.route('/states/<state_id>', methods=['PUT'], strict_slashes=False)
-def update_state(state_id):
-    """Updates a State object"""
-    state = storage.get(State, state_id)
-    if state is None:
+@app_views.route('/users/<user_id>', methods=['PUT'])
+def user_put(user_id):
+    """ handles PUT method """
+    user = storage.get("User", user_id)
+    if user is None:
         abort(404)
-    if not request.json:
+    data = request.get_json()
+    if data is None:
         abort(400, "Not a JSON")
-    data = request.json
-    ignore = ['id', 'created_at', 'updated_at']
     for key, value in data.items():
-        if key not in ignore:
-            setattr(state, key, value)
-    state.save()
-    return jsonify(state.to_dict()), 200
+        ignore_keys = ["id", "email", "created_at", "updated_at"]
+        if key not in ignore_keys:
+            user.bm_update(key, value)
+    user.save()
+    user = user.to_dict()
+    return jsonify(user), 200
+
